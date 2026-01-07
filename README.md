@@ -1,0 +1,1 @@
+# Galorio_LaravelSP
