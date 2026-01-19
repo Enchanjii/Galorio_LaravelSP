@@ -2,46 +2,124 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use App\Models\Student;
+use App\Models\Course;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
 Route::get('/students', function () {
-    // The index view uses static sample data for now.
-    return view('students.index');
+    // If there are Student records in DB, use them; otherwise use sample data.
+    if (Student::count() > 0) {
+        $courseMap = Course::all(); // Get code => fullName mapping
+        
+        $students = Student::all()->map(function ($s) use ($courseMap) {
+            return [
+                'id' => $s->id,
+                'name' => $s->name,
+                'email' => $s->email,
+                'course' => $courseMap[$s->course] ?? $s->course, // Display full name, fallback to code
+                'year' => $s->year,
+            ];
+        })->toArray();
+
+        // Sort by course first, then by name in descending order
+        usort($students, function ($a, $b) {
+            $courseCompare = strcmp($a['course'], $b['course']);
+            if ($courseCompare !== 0) {
+                return $courseCompare;
+            }
+            return strcmp($b['name'], $a['name']);
+        });
+
+        return view('students.index', ["samples" => $students]);
+    }
 });
 
 // Show create form
 Route::get('/students/create', function () {
-    return view('students.create');
+    $courses = Course::all();
+    return view('students.create', compact('courses'));
 });
 
-// Show student details (static sample data)
-Route::get('/students/{id}', function ($id) {
-    $samples = [
-        1 => ['name' => 'Christian Jay', 'email' => 'chan@example.com', 'course' => 'Bachelor of Science in Information Technology', 'year' => '2'],
-        2 => ['name' => 'Maria Carissa', 'email' => 'maria@example.com', 'course' => 'Bachelor of Secondary Education', 'year' => '2'],
-        3 => ['name' => 'Jose Rizal', 'email' => 'jose@example.com', 'course' => 'Bachelor of Information Technology', 'year' => '4'],
-        4 => ['name' => 'Juan Tamad', 'email' => 'juan@example.com', 'course' => 'Bachelor of Science in Nursing', 'year' => '1'],
-        5 => ['name' => 'James Castro', 'email' => 'james@example.com', 'course' => 'Bachelor of Science in Medical Laboratories', 'year' => '2'],
-        6 => ['name' => 'Erleen Ansing', 'email' => 'erleen@example.com', 'course' => 'Bachelor of Science in Nursing', 'year' => '2'],
-        7 => ['name' => 'Leo Labis', 'email' => 'leo@example.com', 'course' => 'Bachelor of Science in Medical Laboratories', 'year' => '2'],
-        8 => ['name' => 'Carlito Camajalan', 'email' => 'carlito@example.com', 'course' => 'Bachelor of Science in Electrical Engineer', 'year' => '4'],
-        9 => ['name' => 'Lance Antipaso', 'email' => 'lance@example.com', 'course' => 'Bachelor of Science in Maritime', 'year' => '3'],
-        10 => ['name' => 'Adrian Yu', 'email' => 'adrian@example.com', 'course' => 'Bachelor of Science in Maritime', 'year' => '2'],
-        11 => ['name' => 'Keannice Loque', 'email' => 'keannice@example.com', 'course' => 'Bachelor of Science in Secondary Education', 'year' => '2'],
-        12 => ['name' => 'Sultan Abdullah', 'email' => 'sultan@example.com', 'course' => 'Bachelor of Science in Accountancy', 'year' => '2'],
-    ];
-    $student = $samples[$id] ?? ['name' => 'Unknown', 'email' => 'unknown@example.com', 'course' => '-', 'year' => '-'];
+// Store new student
+Route::post('/students', function (Request $request) {
+    $courses = Course::getList();
+    
+    $data = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|max:255',
+        'course' => 'required|in:' . implode(',', $courses),
+        'year' => 'required|in:1,2,3,4,5',
+    ]);
 
-    return view('students.show', compact('student'));
+    Student::create($data);
+
+    return redirect('/students')->with('success', 'Student added successfully.');
+});
+
+// Show student details (DB first, then static sample fallback)
+Route::get('/students/{id}', function ($id) {
+    $s = Student::find($id);
+    if ($s) {
+        $courseMap = Course::all();
+        $student = [
+            'id' => $s->id,
+            'name' => $s->name,
+            'email' => $s->email,
+            'course' => $courseMap[$s->course] ?? $s->course, // Display full name, fallback to code
+            'year' => $s->year,
+        ];
+        return view('students.show', compact('student'));
+    }
 });
 
 
 
 // Edit student
 Route::get('/students/{id}/edit', function ($id) {
-    return view('students.edit', compact('id'));
+    $s = Student::find($id);
+    if ($s) {
+        $student = [
+            'id' => $s->id,
+            'name' => $s->name,
+            'email' => $s->email,
+            'course' => $s->course,
+            'year' => $s->year,
+        ];
+        $courses = Course::all();
+        return view('students.edit', compact('student', 'courses'));
+    }
 });
 
+// Update student
+Route::post('/students/{id}', function (Request $request, $id) {
+    $student = Student::find($id);
+    if (!$student) {
+        return redirect('/students')->with('error', 'Student not found.');
+    }
+
+    $courses = Course::getList();
+    
+    $data = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|max:255',
+        'course' => 'required|in:' . implode(',', $courses),
+        'year' => 'required|in:1,2,3,4,5',
+    ]);
+
+    $student->update($data);
+
+    return redirect('/students')->with('success', 'Student updated successfully.');
+});
+
+// Delete student
+Route::post('/students/{id}/delete', function ($id) {
+    $student = Student::find($id);
+    if ($student) {
+        $student->delete();
+        return redirect('/students')->with('success', 'Student deleted successfully.');
+    }
+    return redirect('/students')->with('error', 'Student not found.');
+});

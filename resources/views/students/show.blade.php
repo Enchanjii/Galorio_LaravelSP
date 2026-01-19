@@ -1,4 +1,4 @@
-@extends('layout')
+@extends('components.layout')
 
 @section('content')
     <div class="container py-5">
@@ -12,7 +12,7 @@
                 <p><strong>Year Level:</strong> {{ $student['year'] ?? $student->year ?? 'N/A' }}</p>
             </div>
         </div>
-
+        
         <a href="{{ url('/students') }}" class="btn btn-secondary">Back to Student List</a>
     </div>
 @endsection
