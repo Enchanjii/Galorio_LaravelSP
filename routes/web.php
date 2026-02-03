@@ -10,31 +10,28 @@ Route::get('/', function () {
 });
 
 Route::get('/students', function () {
-    // If there are Student records in DB, use them; otherwise use sample data.
-    if (Student::count() > 0) {
-        $courseMap = Course::all(); // Get code => fullName mapping
-        
-        $students = Student::all()->map(function ($s) use ($courseMap) {
-            return [
-                'id' => $s->id,
-                'name' => $s->name,
-                'email' => $s->email,
-                'course' => $courseMap[$s->course] ?? $s->course, // Display full name, fallback to code
-                'year' => $s->year,
-            ];
-        })->toArray();
+    $courseMap = Course::all(); // Get code => fullName mapping
 
-        // Sort by course first, then by name in descending order
-        usort($students, function ($a, $b) {
-            $courseCompare = strcmp($a['course'], $b['course']);
-            if ($courseCompare !== 0) {
-                return $courseCompare;
-            }
-            return strcmp($b['name'], $a['name']);
-        });
+    $students = Student::all()->map(function ($s) use ($courseMap) {
+        return [
+            'id' => $s->id,
+            'name' => $s->name,
+            'email' => $s->email,
+            'course' => $courseMap[$s->course] ?? $s->course, // Display full name, fallback to code
+            'year' => $s->year,
+        ];
+    })->toArray();
 
-        return view('students.index', ["samples" => $students]);
-    }
+    // Sort by course first, then by name in descending order
+    usort($students, function ($a, $b) {
+        $courseCompare = strcmp($a['course'], $b['course']);
+        if ($courseCompare !== 0) {
+            return $courseCompare;
+        }
+        return strcmp($b['name'], $a['name']);
+    });
+
+    return view('students.index', ["samples" => $students]);
 });
 
 // Show create form
@@ -46,7 +43,7 @@ Route::get('/students/create', function () {
 // Store new student
 Route::post('/students', function (Request $request) {
     $courses = Course::getList();
-    
+
     $data = $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|email|max:255',
@@ -101,7 +98,7 @@ Route::post('/students/{id}', function (Request $request, $id) {
     }
 
     $courses = Course::getList();
-    
+
     $data = $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|email|max:255',

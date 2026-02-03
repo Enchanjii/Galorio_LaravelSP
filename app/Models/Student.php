@@ -14,13 +14,7 @@ class Student extends Model
      *
      * @var list<string>
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'course',
-        'year',
-    ];
-
+    protected $fillable = ['name', 'email', 'course', 'year'];
     /**
      * The attributes that should be cast.
      *

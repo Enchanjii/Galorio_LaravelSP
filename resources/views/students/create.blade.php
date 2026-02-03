@@ -26,10 +26,8 @@
             <div class="mb-3">
                 <label class="form-label">Course</label>
                 
-                <!-- Search Input -->
                 <input type="text" id="courseSearch" class="form-control mb-2 text-start" placeholder="Search courses..." autocomplete="off" style="text-align: left;">
                 
-                <!-- Hidden select (stores actual value) -->
                 <select name="course" id="courseSelect" class="form-control" required style="display: none;">
                     <option value="">-- Select a Course --</option>
                     @foreach ($courses as $code => $fullName)
@@ -39,7 +37,6 @@
                     @endforeach
                 </select>
                 
-                <!-- Dropdown list to display filtered options -->
                 <div id="courseDropdown" class="border rounded mt-1" style="display: none; max-height: 300px; overflow-y: auto; background: white;">
                     <div id="courseOptions"></div>
                 </div>
@@ -56,12 +53,10 @@
                 const optionsContainer = document.getElementById('courseOptions');
                 const allOptions = Array.from(select.querySelectorAll('option')).filter(opt => opt.value);
 
-                // Show dropdown when clicking search input
                 searchInput.addEventListener('focus', showDropdown);
                 
-                // Filter courses as user types
                 searchInput.addEventListener('input', filterCourses);
-                // Close dropdown when clicking outside
+                
                 document.addEventListener('click', function(e) {
                     if (!e.target.closest('.mb-3')) {
                         dropdown.style.display = 'none';
